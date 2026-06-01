@@ -240,6 +240,12 @@ def fetch_channel(ucid, pull_all_videos : Bool)
 
     is_short = channel_video.try(&.is_short) || false
 
+    # Treat length_seconds = 0 (unknown duration) as shorts when hide_shorts is enabled,
+    # unless it's a live stream or scheduled premiere.
+    if CONFIG.hide_shorts && !is_short && length_seconds == 0 && !live_now && premiere_timestamp.nil?
+      is_short = true
+    end
+
     # Just in case Youtube starts mixing shorts into the Videos tab again
     next if CONFIG.hide_shorts && is_short
 

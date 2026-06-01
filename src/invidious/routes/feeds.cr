@@ -430,7 +430,17 @@ module Invidious::Routes::Feeds
 
         # Heuristic: assume <= 60s videos arriving via PubSub are Shorts.
         # YouTube no longer surfaces a reliable Shorts flag in the watch page.
-        is_short = video.length_seconds > 0 && video.length_seconds <= 60
+        # Also treat length_seconds = 0 (unknown duration) as shorts, unless it's
+        # a live stream or scheduled premiere.
+        is_short = if video.live_now || video.premiere_timestamp
+          false
+        elsif video.length_seconds == 0
+          true  # Unknown duration — assume short when hide_shorts is enabled
+        elsif video.length_seconds <= 60
+          true
+        else
+          false
+        end
         next if CONFIG.hide_shorts && is_short
 
         video = ChannelVideo.new({
