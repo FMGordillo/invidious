@@ -21,6 +21,7 @@ struct ChannelVideo
   property live_now : Bool = false
   property premiere_timestamp : Time? = nil
   property views : Int64? = nil
+  property is_short : Bool = false
 
   def to_json(locale, json : JSON::Builder)
     json.object do
@@ -220,6 +221,15 @@ def fetch_channel(ucid, pull_all_videos : Bool)
       .select(SearchVideo)
       .select(&.id.== video_id)[0]?
 
+    # When hide_shorts is enabled, drop RSS entries that aren't present in
+    # the regular Videos tab. The Videos tab is curated by Youtube to exclude
+    # shorts (which live on their own dedicated tab), so an RSS entry not
+    # appearing here is almost certainly a Short.
+    if CONFIG.hide_shorts && channel_video.nil?
+      LOGGER.trace("fetch_channel: #{ucid} : video #{video_id} : Skipped (likely a Short, not in Videos tab)")
+      next
+    end
+
     length_seconds = channel_video.try &.length_seconds
     length_seconds ||= 0
 
@@ -227,6 +237,11 @@ def fetch_channel(ucid, pull_all_videos : Bool)
     live_now ||= false
 
     premiere_timestamp = channel_video.try &.premiere_timestamp
+
+    is_short = channel_video.try(&.is_short) || false
+
+    # Just in case Youtube starts mixing shorts into the Videos tab again
+    next if CONFIG.hide_shorts && is_short
 
     video = ChannelVideo.new({
       id:                 video_id,
@@ -239,6 +254,7 @@ def fetch_channel(ucid, pull_all_videos : Bool)
       live_now:           live_now,
       premiere_timestamp: premiere_timestamp,
       views:              views,
+      is_short:           is_short,
     })
 
     LOGGER.trace("fetch_channel: #{ucid} : video #{video_id} : Updating or inserting video")
@@ -263,6 +279,7 @@ def fetch_channel(ucid, pull_all_videos : Bool)
       count = 0
       videos.select(SearchVideo).each do |video|
         count += 1
+        next if CONFIG.hide_shorts && video.is_short
         video = ChannelVideo.new({
           id:                 video.id,
           title:              video.title,
@@ -274,6 +291,7 @@ def fetch_channel(ucid, pull_all_videos : Bool)
           live_now:           video.badges.live_now?,
           premiere_timestamp: video.premiere_timestamp,
           views:              video.views,
+          is_short:           video.is_short,
         })
 
         # We are notified of Red videos elsewhere (PubSub), which includes a correct published date,

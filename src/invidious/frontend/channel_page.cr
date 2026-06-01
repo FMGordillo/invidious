@@ -21,6 +21,9 @@ module Invidious::Frontend::ChannelPage
         # Ignore playlists, as it is not supported for auto-generated channels yet
         next if (tab.playlists? && channel.auto_generated)
 
+        # Hide the Shorts tab entirely when configured
+        next if tab.shorts? && CONFIG.hide_shorts
+
         tab_name = tab.to_s.downcase
 
         if channel.tabs.includes? tab_name

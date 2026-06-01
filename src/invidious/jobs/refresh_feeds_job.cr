@@ -39,6 +39,14 @@ class Invidious::Jobs::RefreshFeedsJob < Invidious::Jobs::BaseJob
                 db.exec("DROP MATERIALIZED VIEW #{view_name}")
               end
 
+              # If the hide_shorts setting changed, the view definition needs to be regenerated.
+              current_def = db.query_one("SELECT pg_get_viewdef('#{view_name}')", as: String) rescue ""
+              has_shorts_filter = current_def.includes?("is_short")
+              if CONFIG.hide_shorts != has_shorts_filter
+                LOGGER.info("RefreshFeedsJob: Materialized view #{view_name} hide_shorts mismatch, recreating...")
+                db.exec("DROP MATERIALIZED VIEW #{view_name}")
+              end
+
               db.exec("REFRESH MATERIALIZED VIEW #{view_name}")
               db.exec("UPDATE users SET feed_needs_update = false WHERE email = $1", email)
             rescue ex

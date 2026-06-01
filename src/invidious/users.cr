@@ -1,7 +1,10 @@
 require "crypto/bcrypt/password"
 
 # Materialized views may not be defined using bound parameters (`$1` as used elsewhere)
-MATERIALIZED_VIEW_SQL = ->(email : String) { "SELECT cv.* FROM channel_videos cv WHERE EXISTS (SELECT subscriptions FROM users u WHERE cv.ucid = ANY (u.subscriptions) AND u.email = E'#{email.gsub({'\'' => "\\'", '\\' => "\\\\"})}') ORDER BY published DESC" }
+MATERIALIZED_VIEW_SQL = ->(email : String) {
+  shorts_filter = CONFIG.hide_shorts ? " AND NOT cv.is_short" : ""
+  "SELECT cv.* FROM channel_videos cv WHERE EXISTS (SELECT subscriptions FROM users u WHERE cv.ucid = ANY (u.subscriptions) AND u.email = E'#{email.gsub({'\'' => "\\'", '\\' => "\\\\"})}')#{shorts_filter} ORDER BY published DESC"
+}
 
 def create_user(sid, email, password)
   password = Crypto::Bcrypt::Password.create(password, cost: 10)

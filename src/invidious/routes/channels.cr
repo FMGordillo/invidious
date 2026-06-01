@@ -56,6 +56,11 @@ module Invidious::Routes::Channels
         items, next_continuation = Channel::Tabs.get_60_videos(
           channel, continuation: continuation, sort_by: sort_by
         )
+
+        # Drop any shorts that YouTube mixes into the Videos tab.
+        if CONFIG.hide_shorts
+          items = items.reject { |item| item.is_a?(SearchVideo) && item.is_short }
+        end
       end
     end
 
@@ -68,6 +73,11 @@ module Invidious::Routes::Channels
     return data if !data.is_a?(Tuple)
 
     locale, user, subscriptions, continuation, ucid, channel = data
+
+    # Shorts are disabled instance-wide when hide_shorts is enabled.
+    if CONFIG.hide_shorts
+      return env.redirect "/channel/#{channel.ucid}"
+    end
 
     if !channel.tabs.includes? "shorts"
       return env.redirect "/channel/#{channel.ucid}"

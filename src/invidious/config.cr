@@ -178,6 +178,9 @@ class Config
   @[YAML::Field(converter: Preferences::StringToCookies)]
   property cookies : HTTP::Cookies = HTTP::Cookies.new
 
+  # Hide YouTube Shorts everywhere (channel listings, subscriptions, search, trending, popular)
+  property hide_shorts : Bool = true
+
   # Playlist length limit
   property playlist_length_limit : Int32 = 500
 

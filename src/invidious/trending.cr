@@ -44,5 +44,9 @@ def fetch_trending(trending_type, region, locale)
   end
 
   # Deduplicate items before returning results
-  return extracted.select(SearchVideo | ProblematicTimelineItem).uniq!(&.id), plid
+  result = extracted.select(SearchVideo | ProblematicTimelineItem).uniq!(&.id)
+  if CONFIG.hide_shorts
+    result = result.reject { |v| v.is_a?(SearchVideo) && v.is_short }
+  end
+  return result, plid
 end

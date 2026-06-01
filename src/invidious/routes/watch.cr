@@ -202,6 +202,10 @@ module Invidious::Routes::Watch
   end
 
   def self.redirect(env)
+    if CONFIG.hide_shorts && env.request.path.starts_with?("/shorts/")
+      return error_template(404, "Shorts are disabled on this instance.")
+    end
+
     url = "/watch?v=#{env.params.url["id"]}"
     if env.params.query.size > 0
       url += "&#{env.params.query}"

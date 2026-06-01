@@ -190,6 +190,7 @@ module Invidious::Routes::Feeds
         author_verified:    false,
         author_thumbnail:   nil,
         badges:             VideoBadges::None,
+        is_short:           false,
       })
     end
 
@@ -427,6 +428,11 @@ module Invidious::Routes::Feeds
           next # skip this video since it raised an exception (e.g. it is a scheduled live event)
         end
 
+        # Heuristic: assume <= 60s videos arriving via PubSub are Shorts.
+        # YouTube no longer surfaces a reliable Shorts flag in the watch page.
+        is_short = video.length_seconds > 0 && video.length_seconds <= 60
+        next if CONFIG.hide_shorts && is_short
+
         video = ChannelVideo.new({
           id:                 id,
           title:              video.title,
@@ -438,6 +444,7 @@ module Invidious::Routes::Feeds
           live_now:           video.live_now,
           premiere_timestamp: video.premiere_timestamp,
           views:              video.views,
+          is_short:           is_short,
         })
 
         was_insert = Invidious::Database::ChannelVideos.insert(video, with_premiere_timestamp: true)

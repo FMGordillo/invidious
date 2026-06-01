@@ -26,6 +26,7 @@ struct SearchVideo
   property author_verified : Bool
   property author_thumbnail : String?
   property badges : VideoBadges
+  property is_short : Bool = false
 
   def to_xml(auto_generated, query_params, xml : XML::Builder)
     query_params["v"] = self.id
@@ -133,6 +134,7 @@ struct SearchVideo
       json.field "isVr360", self.badges.vr360?
       json.field "is3d", self.badges.three_d?
       json.field "hasCaptions", self.badges.closed_captions?
+      json.field "isShort", self.is_short
     end
   end
 

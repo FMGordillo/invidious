@@ -44,6 +44,10 @@ module Invidious::Routes::API::V1::Channels
       end
     end
 
+    if CONFIG.hide_shorts
+      videos = videos.reject { |v| v.is_a?(SearchVideo) && v.is_short }
+    end
+
     JSON.build do |json|
       # TODO: Refactor into `to_json` for InvidiousChannel
       json.object do
@@ -173,6 +177,10 @@ module Invidious::Routes::API::V1::Channels
       end
     end
 
+    if CONFIG.hide_shorts
+      videos = videos.reject { |v| v.is_a?(SearchVideo) && v.is_short }
+    end
+
     return JSON.build do |json|
       json.object do
         json.field "videos" do
@@ -191,6 +199,10 @@ module Invidious::Routes::API::V1::Channels
     ucid = env.params.url["ucid"]
 
     env.response.content_type = "application/json"
+
+    if CONFIG.hide_shorts
+      return error_json(404, "Shorts are disabled on this instance")
+    end
 
     # Use the private macro defined above.
     channel = nil # Make the compiler happy

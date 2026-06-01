@@ -104,6 +104,7 @@ private module Parsers
 
       # The length information generally exist in "lengthText". However, the info can sometimes
       # be retrieved from "thumbnailOverlays" (e.g when the video is a "shorts" one).
+      is_short = false
       if length_container = item_contents["lengthText"]?
         length_seconds = decode_length_seconds(length_container["simpleText"].as_s)
       elsif length_container = item_contents["thumbnailOverlays"]?.try &.as_a.find(&.["thumbnailOverlayTimeStatusRenderer"]?)
@@ -116,8 +117,8 @@ private module Parsers
 
           if length_text == "SHORTS"
             # Approximate length to one minute, as "shorts" generally don't exceed that length.
-            # TODO: Add some sort of metadata for the type of video (normal, live, premiere, shorts)
             length_seconds = 60_i32
+            is_short = true
           else
             length_seconds = decode_length_seconds(length_text)
           end
@@ -169,6 +170,7 @@ private module Parsers
         author_verified:    author_verified,
         author_thumbnail:   author_thumbnail,
         badges:             badges,
+        is_short:           is_short,
       })
     end
 
@@ -622,6 +624,7 @@ private module Parsers
         author_verified:    false,
         author_thumbnail:   nil,
         badges:             VideoBadges::None,
+        is_short:           true,
       })
     end
 
@@ -688,6 +691,7 @@ private module Parsers
           author_verified:    false,
           author_thumbnail:   nil,
           badges:             VideoBadges::None,
+          is_short:           false,
         })
         # If it's a playlist, it's content_type would be "LOCKUP_CONTENT_TYPE_PLAYLIST"
         # If it's a podcast, it's content_type would be "LOCKUP_CONTENT_TYPE_PODCAST"
@@ -885,6 +889,7 @@ private module Parsers
         author_verified:    false,
         author_thumbnail:   nil,
         badges:             VideoBadges::None,
+        is_short:           true,
       })
     end
 

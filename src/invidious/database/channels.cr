@@ -100,14 +100,14 @@ module Invidious::Database::ChannelVideos
   # This function returns the status of the query (i.e: success?)
   def insert(video : ChannelVideo, with_premiere_timestamp : Bool = false) : Bool
     if with_premiere_timestamp
-      last_items = "premiere_timestamp = $9, views = $10"
+      last_items = "premiere_timestamp = $9, views = $10, is_short = $11"
     else
-      last_items = "views = $10"
+      last_items = "views = $10, is_short = $11"
     end
 
     request = <<-SQL
       INSERT INTO channel_videos
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       ON CONFLICT (id) DO UPDATE
       SET title = $2, published = $3, updated = $4, ucid = $5,
           author = $6, length_seconds = $7, live_now = $8, #{last_items}
@@ -145,11 +145,12 @@ module Invidious::Database::ChannelVideos
   end
 
   def select_popular_videos : Array(ChannelVideo)
+    shorts_filter = CONFIG.hide_shorts ? " AND NOT is_short" : ""
     request = <<-SQL
       SELECT DISTINCT ON (ucid) *
       FROM channel_videos
       WHERE ucid IN (SELECT channel FROM (SELECT UNNEST(subscriptions) AS channel FROM users) AS d
-      GROUP BY channel ORDER BY COUNT(channel) DESC LIMIT 40)
+      GROUP BY channel ORDER BY COUNT(channel) DESC LIMIT 40)#{shorts_filter}
       ORDER BY ucid, published DESC
     SQL
 

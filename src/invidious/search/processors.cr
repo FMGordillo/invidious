@@ -10,7 +10,11 @@ module Invidious::Search
       initial_data = YoutubeAPI.search(query.text, search_params, client_config: client_config)
 
       items, _ = extract_items(initial_data)
-      return items.reject!(Category)
+      items = items.reject!(Category)
+      if CONFIG.hide_shorts
+        items = items.reject { |i| i.is_a?(SearchVideo) && i.is_short }
+      end
+      return items
     end
 
     # Search a youtube channel
@@ -32,7 +36,11 @@ module Invidious::Search
       response_json = YoutubeAPI.browse(continuation)
 
       items, _ = extract_items(response_json, "", ucid)
-      return items.reject!(Category)
+      items = items.reject!(Category)
+      if CONFIG.hide_shorts
+        items = items.reject { |i| i.is_a?(SearchVideo) && i.is_short }
+      end
+      return items
     end
 
     # Search inside of user subscriptions
